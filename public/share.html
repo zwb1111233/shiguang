@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>拾光 · 分享</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f5f7; --surface: #ffffff; --text: #1d1d1f; --sub: #86868b;
+  --border: rgba(0,0,0,.08); --blue: #0071e3;
+  --shadow: 0 2px 14px rgba(0,0,0,.06), 0 18px 50px rgba(0,0,0,.09);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000; --surface: #1c1c1e; --text: #f5f5f7; --sub: #a1a1a6;
+    --border: rgba(255,255,255,.12); --blue: #2997ff;
+    --shadow: 0 2px 14px rgba(0,0,0,.4), 0 18px 50px rgba(0,0,0,.45);
+  }
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.65;
+  min-height: 100vh; -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(52% 38% at 18% 0%, rgba(0,144,247,.12), transparent 70%),
+    radial-gradient(46% 34% at 85% 4%, rgba(162,89,255,.1), transparent 70%),
+    radial-gradient(50% 40% at 50% 100%, rgba(255,94,138,.09), transparent 70%);
+}
+img, video { max-width: 100%; }
+.share-wrap { max-width: 680px; margin: 0 auto; padding: 52px 20px 64px; }
+.share-hero { text-align: center; margin-bottom: 6px; }
+.brand-mark {
+  width: 46px; height: 46px; border-radius: 13px; margin: 0 auto 12px;
+  background: linear-gradient(135deg, #0090f7, #a259ff 55%, #ff5e8a);
+  color: #fff; display: grid; place-items: center;
+  font-weight: 700; font-size: 21px;
+}
+.brand-name { font-weight: 600; font-size: 13.5px; letter-spacing: .08em; color: var(--sub); }
+.share-hero h1 { font-size: clamp(26px, 5vw, 36px); font-weight: 700; letter-spacing: -.01em; margin-top: 24px; }
+.share-meta {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 12px; color: var(--sub); font-size: 14.5px; flex-wrap: wrap;
+}
+.mood-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 980px; color: #fff;
+  font-size: 13.5px; font-weight: 500;
+}
+.share-card {
+  background: var(--surface); border-radius: 28px;
+  box-shadow: var(--shadow); overflow: hidden; margin-top: 28px;
+}
+.share-media { display: grid; gap: 4px; }
+.share-media.g1 { grid-template-columns: 1fr; }
+.share-media.g2 { grid-template-columns: 1fr 1fr; }
+.share-media.g3 { grid-template-columns: 1fr 1fr 1fr; }
+.share-media img, .share-media video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.share-media.g1 img, .share-media.g1 video { max-height: 600px; }
+.share-media.g2 img, .share-media.g2 video { max-height: 320px; }
+.share-media.g3 img, .share-media.g3 video { max-height: 230px; }
+.share-text { padding: 26px 30px 6px; font-size: 16.5px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+.share-tags { padding: 16px 30px 28px; display: flex; gap: 10px; flex-wrap: wrap; }
+.share-tags span { color: var(--blue); font-size: 13.5px; }
+.share-foot { text-align: center; margin-top: 38px; color: var(--sub); font-size: 13.5px; line-height: 2; }
+.share-foot .grad {
+  font-weight: 700;
+  background: linear-gradient(94deg, #0090f7, #a259ff 50%, #ff5e8a);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.share-404 { text-align: center; padding: 110px 20px; }
+.share-404 .brand-mark { opacity: .55; }
+.share-404 h1 { font-size: 22px; font-weight: 700; margin-top: 20px; }
+.share-404 p { color: var(--sub); margin-top: 10px; font-size: 14.5px; }
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in { animation: fadein .45s ease both; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } }
+}
+</style>
+</head>
+<body>
+<main class="share-wrap" id="root">
+  <div class="share-404"><p style="color:var(--sub)">加载中…</p></div>
+</main>
+
+<script>
+(() => {
+'use strict';
+const MOODS = {
+  happy: ['😊', '开心', '#ff9f0a'],
+  love: ['🥰', '幸福', '#ff6482'],
+  calm: ['😌', '平静', '#0a84ff'],
+  tired: ['😪', '疲惫', '#bf5af2'],
+  sad: ['😢', '低落', '#5e5ce6'],
+  angry: ['😤', '烦躁', '#ff453a']
+};
+const pad2 = n => String(n).padStart(2, '0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtMD = ds => { const p = ds.split('-'); return `${Number(p[1])}月${Number(p[2])}日`; };
+const fmtFullCN = ds => { const p = ds.split('-'); return `${p[0]}年${Number(p[1])}月${Number(p[2])}日`; };
+const weekdayCN = ds => '星期' + '日一二三四五六'.charAt(new Date(ds + 'T12:00:00').getDay());
+
+const root = document.getElementById('root');
+const shareId = decodeURIComponent((location.pathname.match(/\/s\/([^/]+)\/?$/) || [])[1] || '');
+
+async function load() {
+  if (!shareId) return render404('分享链接不正确');
+  try {
+    const res = await fetch('/api/share/' + encodeURIComponent(shareId));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '加载失败');
+    render(data);
+  } catch (err) {
+    render404(err.message);
+  }
+}
+
+function render(e) {
+  const mood = MOODS[e.mood];
+  const n = e.media.length;
+  const gcls = n === 1 ? 'g1' : n === 2 ? 'g2' : 'g3';
+  document.title = `拾光 · ${fmtMD(e.date)}的心情`;
+  root.innerHTML = `
+    <div class="share-hero fade-in">
+      <div class="brand-mark" aria-hidden="true">拾</div>
+      <div class="brand-name">拾 光 · 每 日 心 情 手 账</div>
+      <h1>${fmtMD(e.date)}，${mood ? mood[1] : '记录'}的一天</h1>
+      <div class="share-meta">
+        <span>${fmtFullCN(e.date)}</span><span>·</span><span>${weekdayCN(e.date)}</span>
+        ${mood ? `<span class="mood-chip" style="background:${mood[2]}">${mood[0]} ${mood[1]}</span>` : ''}
+      </div>
+    </div>
+    <div class="share-card fade-in">
+      ${n ? `<div class="share-media ${gcls}">${e.media.map(m => m.kind === 'image'
+        ? `<img src="${m.url}" alt="照片" loading="lazy">`
+        : `<video src="${m.url}" controls playsinline preload="metadata"></video>`).join('')}</div>` : ''}
+      ${e.text ? `<p class="share-text">${esc(e.text)}</p>` : ''}
+      ${e.tags.length ? `<div class="share-tags">${e.tags.map(t => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
+      ${!e.text && !n ? '<p class="share-text" style="color:var(--sub)">这条记录暂时没有内容</p>' : ''}
+    </div>
+    <div class="share-foot fade-in">
+      由 <span class="grad">拾光</span> 分享 · 把每一天都好好收藏<br>
+      <span style="font-size:12.5px">${fmtMD(e.date)}的心情记录</span>
+    </div>`;
+}
+
+function render404(msg) {
+  document.title = '拾光 · 分享';
+  root.innerHTML = `
+    <div class="share-404 fade-in">
+      <div class="brand-mark" aria-hidden="true">拾</div>
+      <h1>${esc(msg || '分享不存在')}</h1>
+      <p>链接可能已失效，或作者已停止分享</p>
+    </div>`;
+}
+
+load();
+})();
+</script>
+</body>
+</html>
