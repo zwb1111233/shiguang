@@ -22,6 +22,9 @@ function localToday() {
 function isValidDate(s) {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(s + 'T00:00:00').getTime());
 }
+function isValidDateTime(s) {
+  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?/.test(s) && !Number.isNaN(new Date(s).getTime());
+}
 
 // 会话：HMAC 签名 cookie
 function sign(v) { return crypto.createHmac('sha256', ensureSecret()).update(v).digest('hex'); }
@@ -68,12 +71,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 320 * 1024 * 1024, files: 16 },
+  limits: { fileSize: 320 * 1024 * 1024, files: 30 },
   fileFilter(req, file, cb) {
     if (/^(image|video)\//.test(file.mimetype)) cb(null, true);
     else cb(new Error('只支持图片和视频文件'));
   }
 });
+const uploadMedia = upload.fields([
+  { name: 'files', maxCount: 13 },
+  { name: 'posters', maxCount: 5 }
+]);
 
 // ---------------- 数据读取 ----------------
 function attachMedia(rows) {
@@ -81,12 +88,16 @@ function attachMedia(rows) {
   const ids = rows.map(r => r.id);
   const marks = ids.map(() => '?').join(',');
   const media = db.prepare(
-    `SELECT id, entry_id, kind, file FROM media WHERE entry_id IN (${marks}) ORDER BY sort, id`
+    `SELECT id, entry_id, kind, file, poster FROM media WHERE entry_id IN (${marks}) ORDER BY sort, id`
   ).all(...ids);
   const byEntry = new Map();
   for (const m of media) {
     if (!byEntry.has(m.entry_id)) byEntry.set(m.entry_id, []);
-    byEntry.get(m.entry_id).push({ id: m.id, kind: m.kind, url: `/uploads/media/${m.file}` });
+    byEntry.get(m.entry_id).push({
+      id: m.id, kind: m.kind,
+      url: `/uploads/media/${m.file}`,
+      poster: m.poster ? `/uploads/media/${m.poster}` : null
+    });
   }
   return rows.map(r => ({
     id: r.id,
@@ -216,35 +227,87 @@ app.get('/api/entries/:id', authGuard, (req, res) => {
   res.json(attachMedia([row])[0]);
 });
 
-app.post('/api/entries', authGuard, upload.array('files', 15), (req, res) => {
+// 发布：files 为照片/视频，posters 为视频封面（与 videos 按顺序一一对应）
+app.post('/api/entries', authGuard, uploadMedia, (req, res) => {
   const text = String(req.body.text || '').trim();
   const mood = MOOD_KEYS.includes(req.body.mood) ? req.body.mood : '';
   const date = isValidDate(req.body.date) ? req.body.date : localToday();
   let tags = [];
   try { tags = JSON.parse(req.body.tags || '[]'); } catch { tags = []; }
   tags = extractTags(text, tags);
-  const files = req.files || [];
+  const files = req.files && req.files.files ? req.files.files : [];
+  const posters = req.files && req.files.posters ? req.files.posters : [];
   if (!text && files.length === 0) return res.status(400).json({ error: '写点什么，或者添加照片/视频吧' });
   if (files.length > 13) return res.status(400).json({ error: '一次最多 12 张照片和 1 个视频' });
 
   const info = db.prepare(
     'INSERT INTO entries(date, created_at, mood, text, tags) VALUES(?, ?, ?, ?, ?)'
-  ).run(date, new Date().toISOString(), mood, text, JSON.stringify(tags));
+  ).run(date, isValidDateTime(req.body.createdAt) ? new Date(req.body.createdAt).toISOString() : new Date().toISOString(), mood, text, JSON.stringify(tags));
   const entryId = info.lastInsertRowid;
-  const ins = db.prepare('INSERT INTO media(entry_id, kind, file, sort) VALUES(?, ?, ?, ?)');
-  files.forEach((f, i) => ins.run(entryId, f.mimetype.startsWith('video/') ? 'video' : 'image', f.filename, i));
+  insertMedia(entryId, files, posters, 0);
   const row = db.prepare('SELECT * FROM entries WHERE id = ?').get(entryId);
   res.json(attachMedia([row])[0]);
+});
+
+// 把 files 按顺序写入 media，posters 依次对应其中的视频
+function insertMedia(entryId, files, posters, sortBase) {
+  const ins = db.prepare('INSERT INTO media(entry_id, kind, file, poster, sort) VALUES(?, ?, ?, ?, ?)');
+  let videoIdx = 0;
+  files.forEach((f, i) => {
+    if (f.mimetype.startsWith('video/')) {
+      ins.run(entryId, 'video', f.filename, posters[videoIdx] ? posters[videoIdx].filename : null, sortBase + i);
+      videoIdx++;
+    } else {
+      ins.run(entryId, 'image', f.filename, null, sortBase + i);
+    }
+  });
+}
+
+// 编辑记录：文字/心情/日期可改，keepMedia 之外的旧媒体删除，files 为新增媒体
+app.put('/api/entries/:id', authGuard, uploadMedia, (req, res) => {
+  const id = Number(req.params.id);
+  const row = db.prepare('SELECT * FROM entries WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: '未找到这条记录' });
+  const text = String(req.body.text || '').trim();
+  const mood = MOOD_KEYS.includes(req.body.mood) ? req.body.mood : '';
+  const date = isValidDate(req.body.date) ? req.body.date : row.date;
+  let tags = [];
+  try { tags = JSON.parse(req.body.tags || '[]'); } catch { tags = []; }
+  tags = extractTags(text, tags);
+  const files = req.files && req.files.files ? req.files.files : [];
+  const posters = req.files && req.files.posters ? req.files.posters : [];
+  if (!text && files.length === 0) {
+    const keepCount = db.prepare('SELECT COUNT(*) n FROM media WHERE entry_id = ?').get(id).n;
+    if (!keepCount) return res.status(400).json({ error: '写点什么，或者添加照片/视频吧' });
+  }
+  let keep = [];
+  try { keep = JSON.parse(req.body.keepMedia || '[]').map(Number); } catch { keep = []; }
+  const existing = db.prepare('SELECT id, file, poster FROM media WHERE entry_id = ?').all(id);
+  const del = db.prepare('DELETE FROM media WHERE id = ?');
+  for (const m of existing) {
+    if (!keep.includes(m.id)) {
+      del.run(m.id);
+      for (const f of [m.file, m.poster]) {
+        if (f) fs.promises.unlink(path.join(MEDIA_DIR, f)).catch(() => {});
+      }
+    }
+  }
+  const maxSort = db.prepare('SELECT COALESCE(MAX(sort), -1) m FROM media WHERE entry_id = ?').get(id).m;
+  insertMedia(id, files, posters, maxSort + 1);
+  db.prepare('UPDATE entries SET date = ?, mood = ?, text = ?, tags = ? WHERE id = ?').run(date, mood, text, JSON.stringify(tags), id);
+  const updated = db.prepare('SELECT * FROM entries WHERE id = ?').get(id);
+  res.json(attachMedia([updated])[0]);
 });
 
 app.delete('/api/entries/:id', authGuard, (req, res) => {
   const id = Number(req.params.id);
   const row = db.prepare('SELECT id FROM entries WHERE id = ?').get(id);
   if (!row) return res.status(404).json({ error: '未找到这条记录' });
-  const media = db.prepare('SELECT file FROM media WHERE entry_id = ?').all(id);
+  const media = db.prepare('SELECT file, poster FROM media WHERE entry_id = ?').all(id);
   for (const m of media) {
-    const p = path.join(MEDIA_DIR, m.file);
-    fs.promises.unlink(p).catch(() => {});
+    for (const f of [m.file, m.poster]) {
+      if (f) fs.promises.unlink(path.join(MEDIA_DIR, f)).catch(() => {});
+    }
   }
   db.prepare('DELETE FROM media WHERE entry_id = ?').run(id);
   db.prepare('DELETE FROM entries WHERE id = ?').run(id);

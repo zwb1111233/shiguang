@@ -4,3 +4,13 @@ uploads/
 *.log
 .DS_Store
 Thumbs.db
+
+# 本地演示数据脚手架（不入库）
+tmp-demo/
+tmp-video.mp4
+tmp-video2.mp4
+tmp-ps-out.txt
+seed-demo.js
+check-demo.js
+make-demo-images.ps1
+github-set-info.mjs

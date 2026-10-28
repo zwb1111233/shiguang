@@ -39,6 +39,10 @@ CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date);
 CREATE INDEX IF NOT EXISTS idx_media_entry ON media(entry_id);
 `);
 
+// 轻量迁移：为早期版本的库补充视频封面列
+const mediaCols = db.pragma('table_info(media)').map(c => c.name);
+if (!mediaCols.includes('poster')) db.exec('ALTER TABLE media ADD COLUMN poster TEXT');
+
 function getSetting(key, fallback) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
   return row && row.value !== null && row.value !== undefined ? row.value : fallback;

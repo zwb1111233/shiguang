@@ -93,6 +93,7 @@ const ICONS = {
   trash: S('<path d="M4.5 7h15"/><path d="M9.5 7V5h5v2"/><path d="M6.5 7l1 13h9l1-13"/>'),
   download: S('<path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19.5h14"/>'),
   check: S('<path d="M5 12.5 10 17.5 19 7"/>'),
+  edit: S('<path d="M17 3.5a2.6 2.6 0 0 1 3.7 3.7L7.3 20.6 2.5 21.5l.9-4.8z"/><path d="M14.8 5.7 18.3 9.2"/>'),
   plus: S('<path d="M12 5v14M5 12h14"/>'),
   image: S('<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 17.5 10 12l3.5 3.5L17 12l2.5 2.5"/>'),
   clock: S('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
@@ -233,7 +234,7 @@ function entryCardHTML(e) {
   if (cover) {
     const inner = cover.kind === 'image'
       ? `<img src="${cover.url}" alt="" loading="lazy" decoding="async">`
-      : `<video src="${cover.url}#t=0.1" preload="metadata" muted playsinline></video><span class="vplay"><span>${icon('play')}</span></span>`;
+      : `<video src="${cover.url}#t=0.1"${cover.poster ? ` poster="${cover.poster}"` : ''} preload="metadata" muted playsinline></video><span class="vplay"><span>${icon('play')}</span></span>`;
     mediaHTML = `<span class="ecover">${inner}${e.media.length > 1 ? `<span class="ecount">${e.media.length} 个文件</span>` : ''}</span>`;
   }
   return `<article class="ecard fade-in" data-id="${e.id}" role="button" tabindex="0" aria-label="打开这条记录">
@@ -432,9 +433,15 @@ function renderComposer(container) {
         im.src = f.url;
         im.alt = '待发布照片';
         el.appendChild(im);
+      } else if (f.posterUrl) {
+        const im = document.createElement('img');
+        im.src = f.posterUrl;
+        im.alt = '视频封面';
+        el.appendChild(im);
+        el.title = f.file.name;
       } else {
         el.innerHTML = `${icon('video')}`;
-        el.title = f.file.name;
+        el.title = f.file.name + (f.posterBusy ? '（正在生成封面…）' : '');
       }
       const x = document.createElement('button');
       x.type = 'button';
@@ -459,15 +466,20 @@ function renderComposer(container) {
   $('#cImgBtn').addEventListener('click', () => $('#cImgInput').click());
   $('#cVidBtn').addEventListener('click', () => $('#cVidInput').click());
   $('#cImgInput').addEventListener('change', e => { addImages([...e.target.files]); e.target.value = ''; });
-  $('#cVidInput').addEventListener('change', e => {
+  $('#cVidInput').addEventListener('change', async e => {
     const f = e.target.files[0];
-    if (f) {
-      const idx = files.findIndex(x => x.kind === 'video');
-      if (idx >= 0) files.splice(idx, 1);
-      files.push({ kind: 'video', file: f, url: null });
-      renderThumbs();
-    }
     e.target.value = '';
+    if (!f) return;
+    const idx = files.findIndex(x => x.kind === 'video');
+    if (idx >= 0) files.splice(idx, 1);
+    const item = { kind: 'video', file: f, url: null, poster: null, posterUrl: null, posterBusy: true };
+    files.push(item);
+    renderThumbs();
+    const blob = await makeVideoPoster(f);
+    item.poster = blob;
+    item.posterBusy = false;
+    if (blob) item.posterUrl = URL.createObjectURL(blob);
+    renderThumbs();
   });
 
   $('#cPublish').addEventListener('click', async () => {
@@ -483,6 +495,9 @@ function renderComposer(container) {
     fd.append('text', text);
     if (picked) fd.append('mood', picked);
     fd.append('date', $('#cDate').value || todayStr());
+    files.forEach(f => fd.append('files', f.file, f.file.name));
+    const videoItem = files.find(f => f.kind === 'video');
+    if (videoItem && videoItem.poster) fd.append('posters', videoItem.poster, 'poster.jpg');
     const btn = $('#cPublish');
     const prog = $('#cProg');
     btn.disabled = true;
@@ -493,7 +508,7 @@ function renderComposer(container) {
       $('#cCount').textContent = '0 字';
       picked = '';
       $$('.mood-pill', $('#cMoods')).forEach(x => x.classList.remove('on'));
-      files.forEach(f => f.url && URL.revokeObjectURL(f.url));
+      files.forEach(f => { if (f.url) URL.revokeObjectURL(f.url); if (f.posterUrl) URL.revokeObjectURL(f.posterUrl); });
       files.length = 0;
       renderThumbs();
       prog.hidden = true;
@@ -554,6 +569,37 @@ async function shrinkImage(file) {
     if (!blob || blob.size >= file.size) return file;
     return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
   } catch { return file; }
+}
+
+// 截取视频画面生成封面图
+function makeVideoPoster(file) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.muted = true;
+    v.playsInline = true;
+    let settled = false;
+    const done = val => { if (!settled) { settled = true; URL.revokeObjectURL(url); resolve(val); } };
+    const fail = () => done(null);
+    v.onerror = fail;
+    v.onloadedmetadata = () => {
+      try { v.currentTime = Math.min(0.6, (v.duration || 1) / 3); }
+      catch { fail(); }
+    };
+    v.onseeked = () => {
+      try {
+        const c = document.createElement('canvas');
+        const scale = Math.min(1, 1280 / Math.max(v.videoWidth, 1));
+        c.width = Math.max(2, Math.round(v.videoWidth * scale));
+        c.height = Math.max(2, Math.round(v.videoHeight * scale));
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        c.toBlob(b => done(b || null), 'image/jpeg', 0.82);
+      } catch { fail(); }
+    };
+    v.src = url;
+    setTimeout(fail, 15000);
+  });
 }
 
 // ---------- 手账（瀑布流） ----------
@@ -972,7 +1018,7 @@ function detailHTML(e) {
   const m = MOODS[e.mood];
   const slides = e.media.map((md, i) => md.kind === 'image'
     ? `<div class="nd-slide${i === 0 ? ' on' : ''}"><img src="${md.url}" alt="照片 ${i + 1}"></div>`
-    : `<div class="nd-slide${i === 0 ? ' on' : ''}"><video src="${md.url}" controls playsinline preload="metadata"></video></div>`).join('');
+    : `<div class="nd-slide${i === 0 ? ' on' : ''}"><video src="${md.url}"${md.poster ? ` poster="${md.poster}"` : ''} controls playsinline preload="metadata"></video></div>`).join('');
   return `
   <div class="nd-media" id="ndMedia">
     ${slides || `<div class="nd-slide on" style="background:var(--surface-2)"><div style="color:var(--sub);font-size:15px">这条记录没有照片和视频</div></div>`}
@@ -1022,6 +1068,7 @@ function renderDetailFoot() {
   if (!e.share_id) {
     foot.innerHTML = `<div class="share-row">
       <button class="btn btn-primary" id="dShare" type="button">${icon('share')}分享给好友</button>
+      <button class="btn" id="dEdit" type="button">${icon('edit')}编辑</button>
       <button class="btn btn-danger" id="dDelete" type="button">${icon('trash')}删除</button>
     </div>`;
   } else {
@@ -1036,12 +1083,14 @@ function renderDetailFoot() {
         ${navigator.share ? `<button class="btn" id="dSysShare" type="button">${icon('share')}系统分享</button>` : ''}
         <button class="btn" id="dCard" type="button">${icon('image')}生成图片卡片</button>
         <button class="btn" id="dStopShare" type="button">停止分享</button>
+        <button class="btn" id="dEdit" type="button">${icon('edit')}编辑</button>
         <button class="btn btn-danger" id="dDelete" type="button">${icon('trash')}删除</button>
       </div>`;
   }
   mountIcons(foot);
 
   const bind = (id2, fn) => { const el = $(id2, foot); if (el) el.addEventListener('click', fn); };
+  bind('#dEdit', () => renderDetailEdit());
   bind('#dShare', async () => {
     const res = await api(`/api/entries/${e.id}/share`, { method: 'POST' });
     e.share_id = res.share_id;
@@ -1082,6 +1131,169 @@ function renderDetailFoot() {
     closeDetail();
     location.hash = `#/notes?tag=${encodeURIComponent(b.dataset.tag)}`;
   }));
+}
+
+// ---------- 详情页编辑模式 ----------
+let editBackup = null;
+
+function renderDetailEdit() {
+  const e = curEntry;
+  if (!e) return;
+  editBackup = { media: e.media.map(m => ({ ...m })) };
+  const newFiles = [];
+  const panel = $('#noteDetail');
+  panel.innerHTML = `
+  <div class="nd-edit-media" id="ndEditMedia"></div>
+  <div class="nd-body">
+    <div class="nd-date-row">
+      <div><span class="nd-date">编辑这条记录</span><span class="nd-weekday">${weekdayCN(e.date)}</span></div>
+    </div>
+    <input type="date" id="eDate" class="date-input" style="margin-bottom:16px;align-self:flex-start" value="${e.date}" max="${todayStr()}" aria-label="日期">
+    <div class="moods" id="eMoods" role="group" aria-label="选择心情">
+      ${Object.entries(MOODS).map(([k, m]) => `<button type="button" class="mood-pill${e.mood === k ? ' on' : ''}" data-mood="${k}" aria-pressed="${e.mood === k}">${m.emoji} ${m.label}</button>`).join('')}
+    </div>
+    <textarea id="eText" maxlength="5000" rows="6" aria-label="正文" style="margin-top:14px">${esc(e.text)}</textarea>
+    <p class="attach-hint" style="margin-top:10px">修改日期可以补写或挪动某天的记录 · 正文里的 #标签 会自动重新归类</p>
+    <div class="nd-foot" style="margin-top:auto">
+      <p class="form-err" id="eErr" hidden></p>
+      <div class="share-row">
+        <button class="btn btn-primary" id="eSave" type="button">${icon('check')}保存修改</button>
+        <button class="btn" id="eCancel" type="button">取消</button>
+      </div>
+    </div>
+  </div>`;
+  mountIcons(panel);
+  renderEditMedia();
+
+  function renderEditMedia() {
+    const box = $('#ndEditMedia');
+    let html = '';
+    for (const m of curEntry.media) {
+      html += `<span class="ndm-item">
+        ${m.kind === 'image'
+          ? `<img src="${m.url}" alt="照片">`
+          : `<video src="${m.url}#t=0.1"${m.poster ? ` poster="${m.poster}"` : ''} muted preload="metadata"></video><span class="vplay"><span>${icon('play')}</span></span>`}
+        <button type="button" class="ndm-x" data-del="${m.id}" aria-label="移除这个文件">${icon('x')}</button>
+      </span>`;
+    }
+    newFiles.forEach((f, i) => {
+      html += `<span class="ndm-item">
+        ${f.kind === 'image'
+          ? `<img src="${f.url}" alt="新照片">`
+          : (f.posterUrl ? `<img src="${f.posterUrl}" alt="视频封面">` : `<span class="ndm-vico">${icon('video')}</span>`)}
+        <button type="button" class="ndm-x" data-delnew="${i}" aria-label="移除这个文件">${icon('x')}</button>
+      </span>`;
+    });
+    html += `<button type="button" class="ndm-add" id="eAddImg">${icon('camera')}<span>加照片</span></button>
+      <button type="button" class="ndm-add" id="eAddVid">${icon('video')}<span>加视频</span></button>
+      <input type="file" id="eFileImg" accept="image/*" multiple hidden>
+      <input type="file" id="eFileVid" accept="video/*" hidden>`;
+    box.innerHTML = html;
+    mountIcons(box);
+  }
+
+  // 媒体区的增删会重建内部 DOM，所以监听器都挂在容器上（事件委托）
+  $('#ndEditMedia').addEventListener('click', async ev => {
+    const del = ev.target.closest('[data-del]');
+    if (del) {
+      curEntry.media = curEntry.media.filter(m => m.id !== Number(del.dataset.del));
+      renderEditMedia();
+      return;
+    }
+    const delNew = ev.target.closest('[data-delnew]');
+    if (delNew) {
+      const removed = newFiles.splice(Number(delNew.dataset.delnew), 1)[0];
+      if (removed?.url) URL.revokeObjectURL(removed.url);
+      if (removed?.posterUrl) URL.revokeObjectURL(removed.posterUrl);
+      renderEditMedia();
+      return;
+    }
+    if (ev.target.closest('#eAddImg')) $('#eFileImg').click();
+    if (ev.target.closest('#eAddVid')) $('#eFileVid').click();
+  });
+
+  $('#ndEditMedia').addEventListener('change', async ev => {
+    if (ev.target.id === 'eFileImg') {
+      for (const f of ev.target.files) {
+        if (curEntry.media.length + newFiles.length >= 13) { toast('最多 12 张照片 + 1 个视频'); break; }
+        const processed = await shrinkImage(f);
+        newFiles.push({ kind: 'image', file: processed, url: URL.createObjectURL(processed) });
+      }
+      ev.target.value = '';
+      renderEditMedia();
+    }
+    if (ev.target.id === 'eFileVid') {
+      const f = ev.target.files[0];
+      ev.target.value = '';
+      if (!f) return;
+      const oldNew = newFiles.findIndex(x => x.kind === 'video');
+      if (oldNew >= 0) newFiles.splice(oldNew, 1);
+      const oldKept = curEntry.media.findIndex(x => x.kind === 'video');
+      if (oldKept >= 0) curEntry.media.splice(oldKept, 1);
+      const item = { kind: 'video', file: f, poster: null, posterUrl: null, posterBusy: true };
+      newFiles.push(item);
+      renderEditMedia();
+      const blob = await makeVideoPoster(f);
+      item.poster = blob;
+      item.posterBusy = false;
+      if (blob) item.posterUrl = URL.createObjectURL(blob);
+      renderEditMedia();
+    }
+  });
+
+  $('#eMoods').addEventListener('click', ev => {
+    const b = ev.target.closest('.mood-pill');
+    if (!b) return;
+    $$('#eMoods .mood-pill').forEach(x => { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
+    b.classList.add('on');
+    b.setAttribute('aria-pressed', 'true');
+  });
+
+  $('#eCancel').addEventListener('click', () => {
+    curEntry.media = editBackup.media;
+    editBackup = null;
+    $('#noteDetail').innerHTML = detailHTML(curEntry);
+    mountIcons($('#noteDetail'));
+    bindDetailNav();
+    renderDetailFoot();
+  });
+
+  $('#eSave').addEventListener('click', async () => {
+    const text = $('#eText').value.trim();
+    const mood = $('#eMoods .mood-pill.on')?.dataset.mood || '';
+    const date = $('#eDate').value || curEntry.date;
+    const err = $('#eErr');
+    if (!text && curEntry.media.length === 0 && newFiles.length === 0) {
+      err.textContent = '写点什么，或者保留照片/视频吧';
+      err.hidden = false;
+      return;
+    }
+    const btn = $('#eSave');
+    btn.disabled = true;
+    try {
+      const fd = new FormData();
+      fd.append('text', text);
+      fd.append('mood', mood);
+      fd.append('date', date);
+      fd.append('keepMedia', JSON.stringify(curEntry.media.map(m => m.id)));
+      newFiles.forEach(f => fd.append('files', f.file, f.file.name));
+      const v = newFiles.find(x => x.kind === 'video');
+      if (v && v.poster) fd.append('posters', v.poster, 'poster.jpg');
+      const updated = await api(`/api/entries/${curEntry.id}`, { method: 'PUT', body: fd });
+      curEntry = updated;
+      editBackup = null;
+      $('#noteDetail').innerHTML = detailHTML(curEntry);
+      mountIcons($('#noteDetail'));
+      bindDetailNav();
+      renderDetailFoot();
+      toast('已保存修改 ✓');
+      route();
+    } catch (e2) {
+      err.textContent = e2.message;
+      err.hidden = false;
+      btn.disabled = false;
+    }
+  });
 }
 
 // ---------- 分享图片卡片 ----------
@@ -1302,7 +1514,10 @@ function init() {
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      if (!$('#detailOverlay').hidden) closeDetail();
+      if (!$('#detailOverlay').hidden) {
+        if ($('#eCancel')) { $('#eCancel').click(); }
+        else closeDetail();
+      }
       else if (!$('#searchOverlay').hidden) {
         $('#searchOverlay').hidden = true;
         document.body.style.overflow = '';

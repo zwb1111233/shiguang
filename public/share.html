@@ -139,7 +139,7 @@ function render(e) {
     <div class="share-card fade-in">
       ${n ? `<div class="share-media ${gcls}">${e.media.map(m => m.kind === 'image'
         ? `<img src="${m.url}" alt="照片" loading="lazy">`
-        : `<video src="${m.url}" controls playsinline preload="metadata"></video>`).join('')}</div>` : ''}
+        : `<video src="${m.url}"${m.poster ? ` poster="${m.poster}"` : ''} controls playsinline preload="metadata"></video>`).join('')}</div>` : ''}
       ${e.text ? `<p class="share-text">${esc(e.text)}</p>` : ''}
       ${e.tags.length ? `<div class="share-tags">${e.tags.map(t => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
       ${!e.text && !n ? '<p class="share-text" style="color:var(--sub)">这条记录暂时没有内容</p>' : ''}
