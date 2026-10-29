@@ -1,0 +1,100 @@
+<view class="theme-root {{tc}} page">
+  <!-- Hero -->
+  <view class="hero">
+    <view class="hero-eyebrow">{{greeting}} · 欢迎回到拾光</view>
+    <view class="hero-title">今天也要，\n<text class="grad">好好生活。</text></view>
+    <view class="hero-sub">{{dateText}}<text wx:if="{{todayEmpty}}" class="hero-hint"> · 今天还没有记录</text></view>
+  </view>
+
+  <!-- 今日一言 -->
+  <view class="quote-card">
+    <view class="quote-head">
+      <text class="badge-glass">今日一言</text>
+      <view class="btn-glass" hover-class="press" bindtap="shuffleQuote">换一句</view>
+    </view>
+    <view class="quote-text">{{quote.t}}</view>
+    <view class="quote-author">—— {{quote.a}}</view>
+  </view>
+
+  <!-- 统计 -->
+  <view class="stat-row">
+    <view class="stat-mini">
+      <text class="stat-num">{{stats.streak}}</text>
+      <text class="stat-label">连续记录 · 天</text>
+    </view>
+    <view class="stat-mini">
+      <text class="stat-num">{{stats.entries}}</text>
+      <text class="stat-label">累计 {{stats.days}} 天</text>
+    </view>
+    <view class="stat-mini">
+      <text class="stat-num">{{stats.photos + stats.videos}}</text>
+      <text class="stat-label">照片 {{stats.photos}} · 视频 {{stats.videos}}</text>
+    </view>
+  </view>
+
+  <!-- 发布入口 -->
+  <view class="compose-cta card" hover-class="press" bindtap="goCompose">
+    <view class="cta-left">
+      <view class="cta-title">记录今天</view>
+      <view class="cta-sub">此刻的心情、照片、视频，或只是几句话</view>
+    </view>
+    <view class="cta-btn">＋</view>
+  </view>
+
+  <!-- 那年今天 -->
+  <block wx:if="{{thatday.length}}">
+    <view class="section-title" bindtap="openThatday">那年今天 ›</view>
+    <scroll-view scroll-x class="year-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="year-card card" wx:for="{{thatday}}" wx:key="year">
+        <view class="year-tag">{{item.year}} 年的今天</view>
+        <view class="td-item" wx:for="{{item.list}}" wx:for-item="e" wx:key="id">
+          <view class="td-meta">{{e.moodEmoji ? e.moodEmoji + ' ' : ''}}{{e.dateText}}</view>
+          <view class="td-text">{{e.text || '（照片 / 视频）'}}</view>
+        </view>
+      </view>
+    </scroll-view>
+  </block>
+
+  <!-- 最近的记录 -->
+  <view class="section-title" bindtap="goNotes">最近的记录 ›</view>
+  <view class="waterfall" wx:if="{{wf.left.length}}">
+    <view class="wf-col">
+      <view class="ecard card" hover-class="press" wx:for="{{wf.left}}" wx:key="id"
+            data-id="{{item.id}}" bindtap="openDetail">
+        <image wx:if="{{item.media.length}}" class="ec-media" src="{{item.media[0].path}}"
+               mode="aspectFill" lazy-load style="height:{{item._mh}}rpx" />
+        <view class="ec-body">
+          <view class="ec-meta">{{item.moodEmoji ? item.moodEmoji + ' ' : ''}}{{item.dateText}}</view>
+          <view class="ec-text" wx:if="{{item.text}}">{{item.text}}</view>
+        </view>
+      </view>
+    </view>
+    <view class="wf-col">
+      <view class="ecard card" hover-class="press" wx:for="{{wf.right}}" wx:key="id"
+            data-id="{{item.id}}" bindtap="openDetail">
+        <image wx:if="{{item.media.length}}" class="ec-media" src="{{item.media[0].path}}"
+               mode="aspectFill" lazy-load style="height:{{item._mh}}rpx" />
+        <view class="ec-body">
+          <view class="ec-meta">{{item.moodEmoji ? item.moodEmoji + ' ' : ''}}{{item.dateText}}</view>
+          <view class="ec-text" wx:if="{{item.text}}">{{item.text}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="empty-tip" wx:else><text class="big">🌤️</text>还没有记录，从「记录今天」开始吧</view>
+
+  <!-- 历史上的今天 -->
+  <view class="section-title">历史上的今天</view>
+  <view class="card hist-card">
+    <block wx:if="{{hist.length}}">
+      <view class="hist-item" wx:for="{{hist}}" wx:key="year">
+        <text class="hist-year">{{item.year}}</text>
+        <text class="hist-text">{{item.text}}</text>
+      </view>
+      <view class="hist-src">{{histSource}}</view>
+    </block>
+    <view wx:else class="hist-empty">今天的历史事件暂时没有获取到</view>
+  </view>
+
+  <view class="page-foot">拾光 · 把每一天都好好收藏</view>
+</view>

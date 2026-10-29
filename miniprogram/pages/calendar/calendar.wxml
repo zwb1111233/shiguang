@@ -1,0 +1,32 @@
+<view class="theme-root {{tc}} page">
+  <view class="card cal-card">
+    <view class="cal-head">
+      <view class="cal-nav" hover-class="press" bindtap="prevMonth">‹</view>
+      <view class="cal-title" bindtap="backToday">{{title}}</view>
+      <view class="cal-nav" hover-class="press" bindtap="nextMonth">›</view>
+    </view>
+    <view class="week-row">
+      <text wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="cal-grid">
+      <view wx:for="{{grid}}" wx:key="index"
+            class="cal-day {{item.blank ? 'blank' : ''}} {{item.isToday ? 'today' : ''}} {{item.has ? 'has' : ''}}"
+            hover-class="{{item.blank ? '' : 'press'}}"
+            data-date="{{item.date}}" bindtap="openDay">
+        <text class="d">{{item.day}}</text>
+        <view class="dot" wx:if="{{item.has}}" style="background:{{item.dotColor}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card legend-card">
+    <view class="legend-title">心情颜色</view>
+    <view class="legend-row">
+      <view class="legend-item" wx:for="{{legend}}" wx:key="key">
+        <view class="legend-dot" style="background:{{item.color}}"></view>
+        <text>{{item.emoji}} {{item.label}}</text>
+      </view>
+    </view>
+    <view class="legend-tip">点任意日期，直达那一天的记录</view>
+  </view>
+</view>

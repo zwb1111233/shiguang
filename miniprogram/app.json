@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/notes/notes",
+    "pages/calendar/calendar",
+    "pages/report/report",
+    "pages/settings/settings",
+    "pages/detail/detail",
+    "pages/compose/compose",
+    "pages/lock/lock"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "@navBg",
+    "navigationBarTextStyle": "@navTxt",
+    "navigationBarTitleText": "拾光",
+    "backgroundColor": "@pageBg",
+    "backgroundTextStyle": "@bgTxt"
+  },
+  "tabBar": {
+    "color": "@tabColor",
+    "selectedColor": "@tabSelected",
+    "backgroundColor": "@tabBg",
+    "borderStyle": "@tabBorder",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "首页", "iconPath": "assets/tab/home-gray.png", "selectedIconPath": "assets/tab/home-blue.png" },
+      { "pagePath": "pages/notes/notes", "text": "手账", "iconPath": "assets/tab/notes-gray.png", "selectedIconPath": "assets/tab/notes-blue.png" },
+      { "pagePath": "pages/calendar/calendar", "text": "日历", "iconPath": "assets/tab/calendar-gray.png", "selectedIconPath": "assets/tab/calendar-blue.png" },
+      { "pagePath": "pages/report/report", "text": "报告", "iconPath": "assets/tab/report-gray.png", "selectedIconPath": "assets/tab/report-blue.png" },
+      { "pagePath": "pages/settings/settings", "text": "设置", "iconPath": "assets/tab/settings-gray.png", "selectedIconPath": "assets/tab/settings-blue.png" }
+    ]
+  },
+  "darkmode": true,
+  "themeLocation": "theme.json",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

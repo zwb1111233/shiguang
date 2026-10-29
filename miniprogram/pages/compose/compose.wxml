@@ -1,0 +1,38 @@
+<view class="theme-root {{tc}} page">
+  <view class="card compose-card">
+    <!-- 日期 + 心情 -->
+    <view class="row-top">
+      <text class="compose-title">{{isEdit ? '编辑这条记录' : '今天过得怎么样？'}}</text>
+      <picker mode="date" value="{{date}}" end="{{maxDate}}" bindchange="onDate">
+        <view class="date-pick">📅 {{date}}</view>
+      </picker>
+    </view>
+    <view class="moods">
+      <view wx:for="{{moods}}" wx:key="key"
+            class="mood-pill {{picked === item.key ? 'on' : ''}}"
+            hover-class="press" data-key="{{item.key}}" bindtap="pickMood">
+        {{item.emoji}} {{item.label}}
+      </view>
+    </view>
+
+    <!-- 正文 -->
+    <textarea class="compose-text" value="{{text}}" bindinput="onText"
+              maxlength="5000" auto-height disable-default-padding
+              placeholder="此刻的心情、发生的事、想说的话…&#10;写 #标签 自动归类" placeholder-class="ph" />
+
+    <!-- 媒体 -->
+    <view class="media-grid">
+      <view class="media-item" wx:for="{{media}}" wx:key="index">
+        <image class="media-img" src="{{item.path}}" mode="aspectFill" />
+        <view wx:if="{{item.isVideo}}" class="media-play">▶</view>
+        <view class="media-x" data-idx="{{index}}" bindtap="removeMedia">✕</view>
+      </view>
+      <view class="media-add" hover-class="press" bindtap="addImages">＋<text>照片</text></view>
+      <view class="media-add" hover-class="press" bindtap="addVideo">＋<text>视频</text></view>
+    </view>
+  </view>
+
+  <button class="btn btn-primary save-btn" loading="{{saving}}" bindtap="save">
+    {{isEdit ? '保存修改' : '发布'}}
+  </button>
+</view>

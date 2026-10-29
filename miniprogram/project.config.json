@@ -1,0 +1,29 @@
+{
+  "description": "拾光 · 每日心情手账（微信小程序版）",
+  "packOptions": {
+    "ignore": [
+      { "type": "file", "value": ".eslintrc.js" }
+    ]
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.4.10",
+  "appid": "touristappid",
+  "projectname": "shiguang-miniprogram",
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

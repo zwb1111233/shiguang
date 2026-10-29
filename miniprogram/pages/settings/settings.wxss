@@ -1,0 +1,31 @@
+.page { padding: 24rpx 32rpx 60rpx; min-height: 100vh; box-sizing: border-box; }
+.sec-card { margin-bottom: 20rpx; }
+.sec-title { font-size: 30rpx; font-weight: 700; margin-bottom: 16rpx; }
+.sec-desc { color: var(--sub); font-size: 24rpx; line-height: 1.6; margin-bottom: 20rpx; }
+
+.seg { display: flex; background: var(--card2); border-radius: 999rpx; padding: 6rpx; gap: 6rpx; }
+.seg-item {
+  flex: 1; text-align: center; padding: 14rpx 0; border-radius: 999rpx;
+  color: var(--sub); font-size: 25rpx; transition: all 0.15s ease;
+}
+.seg-item.on { background: var(--card); color: var(--text); font-weight: 600; box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1); }
+
+.input {
+  background: var(--bg); border-radius: 20rpx;
+  padding: 22rpx 26rpx; font-size: 29rpx; margin-bottom: 18rpx;
+}
+.block-btn { width: 100%; margin: 0 0 6rpx; }
+.lock-btns { display: flex; flex-direction: column; gap: 4rpx; }
+.flex-input { width: 100%; box-sizing: border-box; }
+.data-btns { display: flex; flex-direction: column; gap: 4rpx; }
+
+.about-card { text-align: center; padding: 44rpx 34rpx; }
+.about-mark {
+  width: 100rpx; height: 100rpx; border-radius: 28rpx; margin: 0 auto 16rpx;
+  background: linear-gradient(135deg, #0090f7, #a259ff 55%, #ff5e8a);
+  color: #fff; font-size: 46rpx; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.about-name { font-size: 30rpx; font-weight: 700; }
+.about-ver { color: var(--sub); font-size: 22rpx; margin: 6rpx 0 16rpx; }
+.about-text { color: var(--sub); font-size: 24rpx; line-height: 1.7; }

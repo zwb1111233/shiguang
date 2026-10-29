@@ -1,0 +1,10 @@
+<view class="theme-root {{tc}} lock-page">
+  <view class="lock-card {{shaking ? 'shake' : ''}}">
+    <view class="lock-glyph">🔒</view>
+    <view class="lock-title">拾光已锁定</view>
+    <view class="lock-sub">输入隐私密码，继续查看你的手账</view>
+    <input class="lock-input" type="number" password maxlength="8" placeholder="隐私密码"
+           value="{{pass}}" bindinput="onPass" bindconfirm="unlock" focus />
+    <button class="btn btn-primary lock-btn" loading="{{unlocking}}" bindtap="unlock">解锁</button>
+  </view>
+</view>

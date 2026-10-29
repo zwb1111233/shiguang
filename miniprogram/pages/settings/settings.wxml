@@ -1,0 +1,53 @@
+<view class="theme-root {{tc}} page">
+  <!-- 外观 -->
+  <view class="card sec-card">
+    <view class="sec-title">外观</view>
+    <view class="seg">
+      <view class="seg-item {{theme === 'auto' ? 'on' : ''}}" data-v="auto" bindtap="pickTheme">跟随系统</view>
+      <view class="seg-item {{theme === 'light' ? 'on' : ''}}" data-v="light" bindtap="pickTheme">浅色</view>
+      <view class="seg-item {{theme === 'dark' ? 'on' : ''}}" data-v="dark" bindtap="pickTheme">深色</view>
+    </view>
+  </view>
+
+  <!-- 隐私锁 -->
+  <view class="card sec-card">
+    <view class="sec-title">隐私锁</view>
+    <view class="sec-desc">{{lockEnabled ? '已开启 · 每次打开拾光需要输入密码' : '未开启 · 任何人打开都能看到你的手账'}}</view>
+
+    <block wx:if="{{!lockEnabled}}">
+      <input class="input" type="number" password maxlength="8" placeholder="设置 4-8 位数字密码"
+             value="{{pass}}" bindinput="onPass" />
+      <input class="input" type="number" password maxlength="8" placeholder="再输入一次确认"
+             value="{{pass2}}" bindinput="onPass2" />
+      <button class="btn btn-primary block-btn" bindtap="enableLock">开启隐私锁</button>
+    </block>
+    <block wx:else>
+      <input class="input" type="number" password maxlength="8" placeholder="当前密码"
+             value="{{oldPass}}" bindinput="onOldPass" />
+      <view class="lock-btns">
+        <input class="input flex-input" type="number" password maxlength="8" placeholder="新密码（修改时填写）"
+               value="{{newPass}}" bindinput="onNewPass" />
+        <button class="btn block-btn" bindtap="changeLock">修改密码</button>
+        <button class="btn block-btn btn-danger-text" bindtap="disableLock">关闭隐私锁</button>
+      </view>
+    </block>
+  </view>
+
+  <!-- 数据 -->
+  <view class="card sec-card">
+    <view class="sec-title">数据</view>
+    <view class="sec-desc">已记录 {{stats.entries}} 篇 · 照片 {{stats.photos}} 张 · 视频 {{stats.videos}} 个，全部保存在这台手机上。</view>
+    <view class="data-btns">
+      <button class="btn block-btn" bindtap="exportData">导出备份</button>
+      <button class="btn block-btn btn-danger-text" bindtap="clearData">清空所有记录</button>
+    </view>
+  </view>
+
+  <!-- 关于 -->
+  <view class="card sec-card about-card">
+    <view class="about-mark">拾</view>
+    <view class="about-name">拾光 · 每日心情手账</view>
+    <view class="about-ver">{{version}}</view>
+    <view class="about-text">记录每天的感受，把日子过成值得收藏的样子。\n数据只保存在你的手机里，不会上传到任何服务器。</view>
+  </view>
+</view>

@@ -1,0 +1,44 @@
+<view class="theme-root {{tc}} page">
+  <picker mode="selector" range="{{years}}" bindchange="pickYear">
+    <view class="year-pick">{{year}} 年 ▾</view>
+  </picker>
+
+  <block wx:if="{{hasData}}">
+    <view class="stat-grid">
+      <view class="stat-card card"><text class="n">{{report.entries}}</text><text class="l">篇记录</text></view>
+      <view class="stat-card card"><text class="n">{{report.days}}</text><text class="l">被记录的天</text></view>
+      <view class="stat-card card"><text class="n">{{report.words}}</text><text class="l">写下的字</text></view>
+      <view class="stat-card card"><text class="n">{{report.longestStreak}}</text><text class="l">最长连续 · 天</text></view>
+    </view>
+
+    <view class="card sec-card">
+      <view class="sec-title">心情分布</view>
+      <block wx:if="{{moodRows.length}}">
+        <view class="mood-row" wx:for="{{moodRows}}" wx:key="label">
+          <text class="mood-lbl">{{item.label}}</text>
+          <view class="track"><view class="fill" style="width:{{item.width}}%;background:{{item.color}}"></view></view>
+          <text class="mood-val">{{item.pct}}%</text>
+        </view>
+      </block>
+      <view wx:else class="sec-empty">这一年还没选过心情</view>
+    </view>
+
+    <view class="card sec-card">
+      <view class="sec-title">每月记录</view>
+      <view class="month-bars">
+        <view class="mb" wx:for="{{monthBars}}" wx:key="m">
+          <view class="bar" style="height:{{item.height * 1.6}}rpx"></view>
+          <text class="m">{{item.m}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card sec-card" wx:if="{{report.topTags.length}}">
+      <view class="sec-title">最常出现的标签</view>
+      <view class="tags">
+        <view class="chip tag-chip" wx:for="{{report.topTags}}" wx:key="tag">#{{item.tag}} · {{item.n}}</view>
+      </view>
+    </view>
+  </block>
+  <view wx:else class="empty-tip"><text class="big">📊</text>{{year}} 年还没有记录，写下的每一天都会汇入这里</view>
+</view>

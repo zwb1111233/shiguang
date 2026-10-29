@@ -2,9 +2,12 @@
 
 > 把每一天，都好好收藏。
 
-「拾光」是一个跑在自己电脑上的个人心情手账网站：每天记录一点感受、几张照片、一段视频，界面遵循 Apple 设计风格——干净、留白、圆润、克制。
+「拾光」是一个跑在自己设备上的个人心情手账：每天记录一点感受、几张照片、一段视频，界面遵循 Apple 设计风格——干净、留白、圆润、克制。
 
-![技术栈](https://img.shields.io/badge/Node.js-Express-339933) ![数据库](https://img.shields.io/badge/SQLite-better--sqlite3-003B57) ![前端](https://img.shields.io/badge/前端-原生JS零依赖-blue)
+- **网页版**（本目录）：Node.js + Express + SQLite，数据保存在自己电脑上
+- **微信小程序版**（[miniprogram/](miniprogram/)）：原生小程序，数据保存在手机里，零依赖开箱即用
+
+![技术栈](https://img.shields.io/badge/Node.js-Express-339933) ![数据库](https://img.shields.io/badge/SQLite-better--sqlite3-003B57) ![前端](https://img.shields.io/badge/前端-原生JS零依赖-blue) ![小程序](https://img.shields.io/badge/微信小程序-原生-07C160)
 
 ## 功能一览
 
@@ -43,6 +46,10 @@
 npm install
 npm start
 ```
+
+### 微信小程序版
+
+见 [miniprogram/README.md](miniprogram/README.md)——用微信开发者工具导入 `miniprogram/` 文件夹即可运行。
 
 ## 数据保存在哪里？
 

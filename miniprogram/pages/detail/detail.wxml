@@ -1,0 +1,55 @@
+<view class="theme-root {{tc}} page">
+  <!-- 好友分享落地 -->
+  <block wx:if="{{shared}}">
+    <view class="share-hero">
+      <view class="share-mark">拾</view>
+      <view class="share-name">拾 光 · 每 日 心 情 手 账</view>
+      <view class="share-title">{{shared.date}} 的一天</view>
+    </view>
+    <view class="card detail-card">
+      <view class="detail-meta">
+        <text>{{shared.date}}</text>
+      </view>
+      <view class="detail-text" wx:if="{{shared.text}}">{{shared.text}}</view>
+      <view class="share-note">这是好友用「拾光」记录的一天。记录只保存在彼此的手机里，你也可以开始写自己的手账。</view>
+    </view>
+  </block>
+
+  <!-- 本地记录详情 -->
+  <block wx:if="{{entry}}">
+    <swiper wx:if="{{entry.media.length}}" class="media-swiper" bindchange="onSwiperChange" current="{{current}}">
+      <swiper-item wx:for="{{entry.media}}" wx:key="id">
+        <video wx:if="{{item.isVideo}}" class="media-item" src="{{item.videoPath}}" poster="{{item.path}}"
+               controls object-fit="contain" show-center-play-btn />
+        <image wx:else class="media-item" src="{{item.path}}" mode="aspectFit" bindtap="previewImage" />
+      </swiper-item>
+    </swiper>
+    <view class="swiper-count" wx:if="{{entry.media.length > 1}}">{{current + 1}} / {{entry.media.length}}</view>
+
+    <view class="card detail-card">
+      <view class="detail-head">
+        <view>
+          <view class="detail-date">{{entry.fullDateText}}</view>
+          <view class="detail-week">{{entry.dateText}} · {{entry.weekday}}</view>
+        </view>
+        <view class="mood-chip" wx:if="{{entry.moodLabel}}" style="background:{{entry.moodColor}}">
+          {{entry.moodEmoji}} {{entry.moodLabel}}
+        </view>
+      </view>
+      <view class="detail-text" user-select>{{entry.text}}</view>
+      <view class="detail-tags" wx:if="{{entry.tags.length}}">
+        <view class="chip tag-chip" wx:for="{{entry.tags}}" wx:key="*this"
+              data-tag="{{item}}" bindtap="tapTag">#{{item}}</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 操作条 -->
+  <view class="action-bar" wx:if="{{entry}}">
+    <button class="btn btn-primary act-btn" open-type="share">
+      分享
+    </button>
+    <button class="btn act-btn" bindtap="goEdit">编辑</button>
+    <button class="btn act-btn btn-danger-text" bindtap="confirmDelete">删除</button>
+  </view>
+</view>
